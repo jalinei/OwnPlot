@@ -9,7 +9,8 @@ const buttonActions = {
   action6Btn: '#nav-chartConfig-tab',
   action7Btn: '#nav-record-tab',
   action8Btn: '#nav-mockPorts-tab',
-  action9Btn: '#nav-keyBindings-tab'
+  action9Btn: '#nav-keyBindings-tab',
+  action10Btn:'#nav-flash'
 };
 let isFirstKeyupListenerActive = false;
 
@@ -34,18 +35,18 @@ function openKeyBindingsModal(buttonId) {
     if (event.altKey) modifiers.push('Alt');
     if (event.shiftKey) modifiers.push('Shift');
     if (event.metaKey) modifiers.push('Meta');
-  
+
     const lastModifier = modifiers.length > 0 ? modifiers[modifiers.length-1] : '';
     const keyCombination = lastModifier !== '' ? lastModifier + '+' + event.code : event.code;
     button.textContent = keyCombination;
-  
+
     try {
       localStorage.setItem(buttonId, keyCombination);
     } catch (error) {
       console.error('Failed to store key combination in localStorage:', error);
       return;
     }
-  
+
     buttonTextArray.length = 0;
     for (const actionButtonId in buttonActions) {
       const actionButton = document.getElementById(actionButtonId);
@@ -54,7 +55,7 @@ function openKeyBindingsModal(buttonId) {
     }
 
     modal.style.display = 'none';
-  
+
     handleDuplicates(buttonTextArray);
 
     document.removeEventListener('keyup', handleKeyup);

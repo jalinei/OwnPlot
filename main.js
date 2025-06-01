@@ -4,7 +4,7 @@
  * @ Website: https://www.owntech.org/
  * @ Mail: owntech@laas.fr
  * @ Create Time: 2022-08-23 14:14:50
- * @ Modified by: Guillaume Arthaud
+ * @ Modified by: Jean Alinei
  * @ Modified time: 2022-09-07 13:47:38
  * @ Description:
  */
@@ -14,20 +14,32 @@ const path = require('path');
 const url = require('url');
 const ejse = require('ejs-electron');
 const fs = require('fs'); //file opening, reading & writing
+const isDev = require('electron-is-dev'); //to know if prod or dev
+const { flashFirmware, cancelFlash } = require('./scripts/flasher');
 
 let icon;
+let mcumgrBinary;
+let mcumgrPath;
+
 switch (process.platform) {
     case 'win32':
         icon = path.resolve(__dirname, 'assets', 'Icon.ico');
+        mcumgrBinary = 'mcumgr.exe';
         break;
     case 'darwin':
         icon = path.resolve(__dirname, 'assets', 'Icon.icns');
         //app.dock.setIcon(path.resolve(__dirname, 'assets', 'Icon.png'));
+        mcumgrBinary = 'mcumgr-mac';
         break;
     case 'linux':
         icon = path.resolve(__dirname, 'assets', 'Icon.png');
+        mcumgrBinary = 'mcumgr';
         break;
 }
+
+mcumgrPath = isDev
+  ? path.join(__dirname, 'tools', mcumgrBinary)
+  : path.join(process.resourcesPath, 'tools', mcumgrBinary);
 
 let mainWindow;
 
@@ -79,6 +91,48 @@ app.whenReady().then(() => {
 
     ipcMain.on('get-user-data-folder', (event) => {
         event.returnValue = app.getPath('userData');
+    });
+
+    ipcMain.handle('get-example-bins', async () => {
+        try {
+            // Folder containing example .bin files:
+            const examplesDir = path.join(__dirname, 'tools', 'examples_bin');
+            const files = await fs.promises.readdir(examplesDir);
+
+          // Filter only .bin files:
+            const bins = files
+            .filter((fn) => fn.toLowerCase().endsWith('.bin'))
+            .map((fn) => ({
+                name: fn,
+                fullPath: path.join(examplesDir, fn)
+            }));
+
+            return bins;
+        } catch (err) {
+            console.error('Error reading examples_bin folder:', err);
+            return [];
+        }
+    });
+
+    ipcMain.handle("start-flash", (event, { comPort, firmwarePath }) => {
+        return new Promise((resolve) => {
+          flashFirmware(
+            { comPort, firmwarePath, mcumgrPath },
+            (progressMessage) => {
+              // Relay progress messages
+              mainWindow.webContents.send("flash-progress", progressMessage);
+            },
+            () => {
+                // Notify renderer that flashing is fully done (error or success)
+                mainWindow.webContents.send("flash-complete");
+            }
+          );
+          resolve(); // We resolve immediately; done events are separate
+        });
+      });
+
+    ipcMain.on('cancel-flash', () => {
+        cancelFlash();
     });
 
     mainWindow.loadFile(__dirname + '/index.ejs');

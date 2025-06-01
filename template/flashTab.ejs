@@ -1,0 +1,54 @@
+<!--
+ * @ Licence: OwnPlot, the OwnTech data plotter. Copyright (C) 2025. - OwnTech Foundation.
+	Delivered under GNU Lesser General Public License Version 2.1 (https://opensource.org/licenses/LGPL-2.1)
+ * @ Website: https://www.owntech.org/
+ * @ Mail: owntech@laas.fr
+ * @ Create Time: 2025-06-01 17:53:45
+ * @ Modified by: Jean Alinei
+ * @ Modified time: 2025-06-01 17:53:45
+ * @ Description:
+ -->
+
+<div>
+    <div class="mb-3">
+        <label for="exampleSelect" class="form-label fw-bold">Load Example</label>
+        <select id="exampleSelect" class="form-select">
+            <option selected disabled>-- Choose an example --</option>
+            <!-- JavaScript will fill in <option> entries here -->
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="firmwareFileInput" class="form-label fw-bold">Custom Firmware File</label>
+        <input type="file" accept=".bin" class="form-control" id="firmwareFileInput">
+    </div>
+
+    <div class="mb-3">
+        <button type="button" id="startFlashButton" class="btn btn-primary w-100">⚡ Flash Firmware</button>
+    </div>
+
+    <div class="mb-3">
+        <button type="button" id="cancelFlashButton" class="btn btn-danger w-100 d-none">✖ Cancel</button>
+    </div>
+
+    <div class="mb-3 d-none" id="flashProgressWrapper">
+    <label class="form-label fw-bold">Progress</label>
+        <div class="progress">
+            <div id="flashProgressBar" class="progress-bar" role="progressbar"
+                style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+            0%
+            </div>
+        </div>
+    </div>
+
+    <!-- Toggle log visibility -->
+    <div class="form-check form-switch mb-2">
+        <input class="form-check-input mr-2 " type="checkbox" id="toggleFlashLog">
+        <label class="form-check-label mx-2 mt-1" for="toggleFlashLog">Show Flash Log</label>
+    </div>
+
+    <div class="mb-3 d-none" id="flashLogWrapper">
+        <label for="flashLogOutput" class="form-label fw-bold">Flash Log</label>
+        <textarea id="flashLogOutput" class="form-control" rows="10" readonly></textarea>
+    </div>
+</div>
