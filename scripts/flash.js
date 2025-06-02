@@ -15,13 +15,31 @@ $(document).ready(function () {
   // When the user picks an example, set selectedFilePath to its path
   $('#exampleSelect').on('change', function () {
     const chosenPath = $(this).val();
+
     if (chosenPath) {
+      // Extract filename from full path and strip ".bin"
+      const fileName = chosenPath.split(/[\\/]/).pop(); // Get "example.bin"
+      const docName = fileName.replace(/\.bin$/i, '');  // Get "example"
+
+      // Build documentation URL
+      const docUrl = `https://docs.owntech.org/latest/examples/TWIST/DC_DC/${docName}`;
+
+      // Set and show documentation button
+      $('#exampleDocButton')
+        .removeClass('d-none')
+        .off('click')
+        .on('click', () => {
+          window.open(docUrl, '_blank');
+        });
+
       selectedFilePath = chosenPath;
-      $('#flashLogOutput').val(`Loaded example: ${chosenPath.split(/[\\/]/).pop()}\n`);
-      // Clear the file‐input so the user knows the .bin is selected from examples
+      $('#flashLogOutput').val(`Loaded example: ${fileName}\n`);
+
+      // Clear file input to indicate selection came from example
       $('#firmwareFileInput').val('');
     }
   });
+
 
   // Handle file‐input selection (overrides example choice)
   $('#firmwareFileInput').on('change', (e) => {
