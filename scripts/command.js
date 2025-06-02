@@ -4,58 +4,50 @@
  * @ Website: https://www.owntech.org/
  * @ Mail: owntech@laas.fr
  * @ Create Time: 2022-08-30 09:31:24
- * @ Modified by: Guillaume Arthaud
+ * @ Modified by: Jean Alinei
  * @ Modified time: 2022-09-07 14:01:55
  * @ Description:
  */
 
-const fs = require('fs');
-const { ipcRenderer } = require('electron');
-
-const sendInput = $("#sendInput");
-const sendBtn = $("#sendBtn");
-const addCommandBtn = $("#addCommandBtn");
-const addCommandName = $("#addCommandName");
-const addCommandData = $("#addCommandData");
+const sendInput   = $("#sendInput");
+const sendBtn     = $("#sendBtn");
+const addCommandBtn   = $("#addCommandBtn");
+const addCommandName  = $("#addCommandName");
+const addCommandData  = $("#addCommandData");
 const addCommandColor = $("#addCommandColor");
-const buttonConfigSelect = $("#buttonConfigSelect");
-const saveConfigInputGroup = $("#saveConfigInputGroup");
-const saveConfigButton = $("#saveConfigButton");
-const saveConfigName = $("#saveConfigName");
-const saveConfigButtonButton = $("#saveConfigButtonButton");
-const deleteButtonButton= $("#deleteButtonButton");
-const terminalHistory = $("#terminalHistory");
-const MAX_TERMINAL_LINES=1000;
-const deleteConfigButton = $("#deleteConfigButton");
-
+const deleteButtonButton = $("#deleteButtonButton");
+const terminalHistory    = $("#terminalHistory");
+const MAX_TERMINAL_LINES = 1000;
 
 const encoder = new TextEncoder();
-const configButtonPath = ipcRenderer.sendSync('get-user-data-folder') + "/config/buttons";
 
 let commandButtons = [];
-let fileCommandButtons = [];
-let filesConfigButton = [];
 let deleteMode = false;
 let commandBtnTimestamp = $('#commandBtnTimestamp');
-
-let autoSendBtn = $('#autoSendBtn');
-let autoSendPeriod = $('#autoSendPeriod');
-let autoSendValue = 1000;
+let autoSendBtn       = $('#autoSendBtn');
+let autoSendPeriod    = $('#autoSendPeriod');
+let autoSendValue     = 1000;
 let autoSendIntervalId = null;
+let lastLoadedButtons = [];
 
 $(() => {
     disableSend();
     updateCommandButtons();
 
+    $(document).on("configSelected", function(event, selectedConfigName) {
+        if (selectedConfigName && selectedConfigName !== "new") {
+            loadButtonsFromConfig(selectedConfigName);
+        }
+    });
+
     autoSendPeriod.on("input", function() {
-        if(autoSendPeriod.val().length > 1){
+        if (autoSendPeriod.val().length > 1) {
             autoSendValue = parseInt(autoSendPeriod.val());
         }
-	})
+    });
 
     enterKeyupHandler(sendInput, () => {
         send(sendInput.val());
-        //not available in this version: printDebugTerminal('sent---> ' + sendInput.val());
     });
 
     sendBtn.on('click', () => {
@@ -69,108 +61,58 @@ $(() => {
             }, autoSendValue);
         } else {
             handleSend();
-            //not available in this version: printDebugTerminal('sent---> ' + sendInput.val());
         }
-
     });
 
     enterKeyupHandler(addCommandName, addCommandSubmitHandler);
     enterKeyupHandler(addCommandData, addCommandSubmitHandler);
-    
-    addCommandBtn.on('click', function() {
-        addCommandSubmitHandler();
-    });
-
-    saveConfigButton.on('click', function() {
-        if (saveConfigName.val().length > 0) {
-            saveCommandButtons(addJsonOrNot(saveConfigName.val()));
-        }
-    });
-
-    saveConfigButtonButton.on('click', function() {
-        let val = $("#buttonConfigSelect option:selected").val()
-        if (val == "new") {
-            saveCommandButtons(addJsonOrNot(saveConfigName.val()));
-        } else {
-            saveCommandButtons($("#buttonConfigSelect option:selected").val());
-        }
-    });
+    addCommandBtn.on('click', addCommandSubmitHandler);
 
     deleteButtonButton.on('click', function() {
         if (deleteMode) {
             deleteMode = false;
-            deleteButtonButton.html("Delete buttons")
+            deleteButtonButton.html("Delete buttons");
         } else {
             deleteMode = true;
-            deleteButtonButton.html("Stop deleting buttons")
+            deleteButtonButton.html("Stop deleting buttons");
         }
-        updateCommandButtons(); 
+        updateCommandButtons();
     });
 
     $("#clearHistoryButton").on("click", function() {
         $("#terminalHistory").empty();
     });
 
-    updateCommandFilesList();
-
-    commandTimestampBtnEnable(commandBtnTimestamp); //default behaviour
-	commandBtnTimestamp.on('click', function() {
-		if(commandBtnTimestamp.attr('aria-pressed') === "true"){
-			//if it is enabled then disable it
-			commandTimestampBtnDisable(commandBtnTimestamp);
-		} else {
-			commandTimestampBtnEnable(commandBtnTimestamp);
-		}
-	});
-
-    autoSendBtnDisable(autoSendBtn); //default behaviour
-	autoSendBtn.on('click', function() {
-		if(autoSendBtn.attr('aria-pressed') === "true"){
-			//if it is enabled then disable it
-            clearInterval(autoSendIntervalId);
-			autoSendBtnDisable(autoSendBtn);
-		} else {
-			autoSendBtnEnable(autoSendBtn);
-		}
-	});
-
-    $("#buttonConfigSelect").change(function() {
-        updateNewFieldVisibility();
-        const selectedConfig = $("#buttonConfigSelect option:selected").val();
-        if (selectedConfig === "new") {
-          deleteConfigButton.prop("disabled", true);
-          deleteConfigButton.addClass("disabled"); // Add disabled class
+    commandTimestampBtnEnable(commandBtnTimestamp);
+    commandBtnTimestamp.on('click', function() {
+        if (commandBtnTimestamp.attr('aria-pressed') === "true") {
+            commandTimestampBtnDisable(commandBtnTimestamp);
         } else {
-          deleteConfigButton.prop("disabled", false);
-          deleteConfigButton.removeClass("disabled"); // Remove disabled class
+            commandTimestampBtnEnable(commandBtnTimestamp);
         }
     });
 
-    $("#deleteConfigButton").on('click', function() {
-        handleDeleteConfig();
-    });    
+    autoSendBtnDisable(autoSendBtn);
+    autoSendBtn.on('click', function() {
+        if (autoSendBtn.attr('aria-pressed') === "true") {
+            clearInterval(autoSendIntervalId);
+            autoSendBtnDisable(autoSendBtn);
+        } else {
+            autoSendBtnEnable(autoSendBtn);
+        }
+    });
 });
 
 function addCommandSubmitHandler() {
-    let button = {  
-        //color: addCommandColor.val(),
+    let button = {
         text: addCommandName.val(),
         command: addCommandData.val(),
-        defaultColor: true, //color choice for commands is disabled for now
+        defaultColor: true,
         isClear: false
     };
-    // if(button.color == "#fffffe"){
-    //     button.defaultColor = true; //we use fffffe as a default color and hope no one uses this specific color intentionnally
-    // }
-    // let brightness = parseInt(button.color.slice(1,3), 16);
-    // brightness += parseInt(button.color.slice(3,5), 16);
-    // brightness += parseInt(button.color.slice(5,7), 16);
-    // if(brightness > 450){
-    //     button.isClear=true;
-    // }
-    if (button.text == "") {
+    if (button.text === "") {
         addCommandName[0].select();
-    } else if (button.command == "") {
+    } else if (button.command === "") {
         addCommandData[0].select();
     } else {
         addCommandButton(button);
@@ -183,119 +125,23 @@ function addCommandButton(newButton) {
     updateCommandButtons();
 }
 
-function removeCommandButton(index) {
-    commandButtons.splice(index, 1);
-    updateCommandButtons();
-}
+async function loadButtonsFromConfig(configFileName) {
+    try {
+        const config = await ipcRenderer.invoke('config-load', configFileName);
+        console.log("Loaded config:", config);
+        commandButtons = config.buttons || [];
 
-function addJsonOrNot(filename) {
-    extention = filename.slice(-5);
-    if (extention != ".json" && extention != ".JSON")
-    {
-        return (filename + ".json");
+        lastLoadedButtons = JSON.parse(JSON.stringify(commandButtons)); // deep clone
+        updateCommandButtons();
+    } catch (err) {
+        console.error("Failed to load config:", err);
     }
-    return (filename);
 }
-
-function saveCommandButtons(filename) {
-    const data = JSON.stringify(commandButtons)
-
-    fs.writeFile(configButtonPath + "/" + filename, data, 'utf8', err => {
-        if (err) {
-            console.log(`Error writing file: ${err}`)
-        } else {
-            console.log(`File ${filename} is written successfully!`)
-            updateCommandFilesList(filename);
-        }
-    })
-}
-
-function loadCommandButtons(file) {
-    commandButtons = [];
-    fileCommandButtons = [];
-
-    fs.readFile(configButtonPath + "/" + file, 'utf8', (err, data) => {
-        if (err) {
-            console.log(`Error reading file from disk: ${err}`)
-        } else {
-            commandButtons = JSON.parse(data);
-            fileCommandButtons = commandButtons.slice(); //copy of the array
-            updateCommandButtons();
-        }
-    })
-}
-
-function updateNewFieldVisibility() {
-    $("#buttonConfigSelect option:selected").each(function() {
-        if ($( this ).val() == "new") {
-            commandButtons = [];
-            fileCommandButtons = [];
-            updateCommandButtons(); //empty the buttons and update
-            saveConfigInputGroup.show();
-        } else {
-            saveConfigInputGroup.hide();
-            console.log($( this ).val());
-            loadCommandButtons($( this ).val());
-        }
-    });
-
-    // Enable and activate the delete configuration button
-    deleteConfigButton.prop("disabled", false);
-    deleteConfigButton.removeClass("disabled");
-}
-
-function updateCommandFilesList(selectedItem) {
-    let configSelecthtml = "";
-    let itemNewSelected = "";
-    if (selectedItem == "") {
-        itemNewSelected = "selected";
-    }
-
-    configSelecthtml += "<option " + itemNewSelected + " value='new'>-- new --</option>";
-
-    fs.readdir(configButtonPath, (err, files) => {
-        if (err)
-            console.log(err);
-        else {
-            filesConfigButton = files;
-            filesConfigButton.forEach((file) => {
-                let itemSelected = "";
-                if (selectedItem == file) {
-                    itemSelected = "selected";
-                }
-                configSelecthtml += "<option " + itemSelected + " value='" + file + "'>" + file + "</option>";
-            buttonConfigSelect.html(configSelecthtml);
-            });
-
-            // Update the configuration select element
-            buttonConfigSelect.html(configSelecthtml);
-
-            // Set the selected item if provided
-            if (selectedItem) {
-                buttonConfigSelect.val(selectedItem);
-            }
-
-            updateNewFieldVisibility();
-
-            // Disable the delete button if -- new -- is selected
-            const selectedConfig = $("#buttonConfigSelect option:selected").val();
-            if (selectedConfig === "new") {
-                deleteConfigButton.prop("disabled", true);
-            }
-        }
-    })
-
-    buttonConfigSelect.change(function() {
-        updateNewFieldVisibility();
-    })
-}
-
 const compareArrays = (a, b) =>
     a.length === b.length &&
     a.every((element, index) => element === b[index]);
 
 function updateCommandButtons() {
-
     if (commandButtons.length > 0) {
         deleteButtonButton.show();
     } else {
@@ -303,13 +149,13 @@ function updateCommandButtons() {
         deleteMode = false;
     }
 
-    if (!compareArrays(commandButtons, fileCommandButtons)) { //local and file differs
+    if (!compareArrays(commandButtons, lastLoadedButtons)) {
         saveConfigButtonButton.show();
     } else {
         saveConfigButtonButton.hide();
     }
 
-    if (commandButtons.length){
+    if (commandButtons.length) {
         $("#commandButtonContainer").empty();
         commandButtons.forEach((elem, index) => {
             let iconHtml = "";
@@ -339,7 +185,7 @@ function updateCommandButtons() {
                 appendToTerminal(elem.command + " (" + elem.text + ")");
             });
         });
-        $(".removeCommandButton").on("click", function(){
+        $(".removeCommandButton").on("click", function() {
             let buttonIndex = getIntInString($(this).attr("id"));
             commandButtons.splice(buttonIndex, 1);
             updateCommandButtons();
@@ -348,7 +194,8 @@ function updateCommandButtons() {
     } else {
         $("#commandButtonContainer").hide();
     }
-    if(portIsOpen){
+
+    if (portIsOpen) {
         enableSend();
     } else {
         disableSend();
@@ -414,23 +261,6 @@ function commandTime() {
 	return(timeStr);
 }
 
-function deleteConfig(configName) {
-    const filePath = configButtonPath + "/" + configName;
-    fs.unlink(filePath, (err) => {
-      if (err) {
-        console.log(`Error deleting file: ${err}`);
-      } else {
-        console.log(`File ${configName} is deleted successfully!`);
-  
-        // Update the configuration files list
-        updateCommandFilesList("");
-  
-        // Reset the selected option to -- new --
-        buttonConfigSelect.val("new");
-      }
-    });
-}
-
 function autoSendBtnEnable(elem) {
 	elem.attr('aria-pressed', 'true');
 	elem.removeClass('btn-warning');
@@ -464,21 +294,4 @@ function handleSend() {
     }else{
         appendToTerminal(sendInput.val() + " (" + 'unknown command' + ")");
     }
-}
-
-function handleDeleteConfig() {
-    let selectedConfig = $("#buttonConfigSelect option:selected").val();
-    $('#deleteConfigModal .config-name').text('Selected configuration : ' + selectedConfig);
-    $('#deleteConfigModal').modal('show');
-
-    $('#deleteConfigModal #confirmDeleteConfigButton').on('click', function() {
-        if (selectedConfig != "new") {
-            deleteConfig(selectedConfig);
-        }
-        $('#deleteConfigModal').modal('hide');
-    });
-
-    $('#deleteConfigModal #cancelDeleteConfigButton').on('click', function() {
-        $('#deleteConfigModal').modal('hide');
-    });
 }

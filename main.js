@@ -71,6 +71,11 @@ function copyFolder(sourceDir, destDir) {
 }
 
 app.whenReady().then(() => {
+    const userDataFolder = app.getPath('userData');
+    const configButtonPath = path.join(userDataFolder, 'config', 'buttons');
+    const configManager = require('./scripts/configManager');
+    configManager.setConfigPath(configButtonPath);
+
     // Create the browser window.
     mainWindow = new BrowserWindow({
         width: 800,
@@ -89,10 +94,43 @@ app.whenReady().then(() => {
     mkdirp(app.getPath('userData') + "/config/buttons");
     copyFolder(__dirname + "/config/buttons", app.getPath('userData') + "/config/buttons");
 
-    ipcMain.on('get-user-data-folder', (event) => {
-        event.returnValue = app.getPath('userData');
+    // CONFIG MANAGER IPCs
+    ipcMain.handle('get-user-data-folder', async () => {
+        return app.getPath('userData');
     });
 
+    ipcMain.handle('config-list-files', async () => {
+        return new Promise((resolve, reject) => {
+            configManager.listConfigFiles((err, files) => {
+                if (err) reject(err);
+                else resolve(files);
+            });
+        });
+    });
+
+    ipcMain.handle('config-load', async (event, fileName) => {
+        return configManager.loadConfig(fileName); // this already returns parsed JSON
+    });
+
+    ipcMain.handle('config-save-buttons', async (event, { filename, commandButtons }) => {
+        return new Promise((resolve, reject) => {
+            configManager.saveCommandButtons(filename, commandButtons, (err) => {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
+    });
+
+    ipcMain.handle('config-delete', async (event, configName) => {
+        return new Promise((resolve, reject) => {
+            configManager.deleteConfig(configName, (err) => {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
+    });
+
+    // FLASHER IPCs
     ipcMain.handle('get-example-bins', async () => {
         try {
             // Folder containing example .bin files:
