@@ -13,6 +13,10 @@ const { Button } = require("bootstrap");
 const { now } = require("moment");
 const objectKeys = require("object-keys");
 
+// Bootstrap 5 native tooltip setup
+const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+const tooltipList = tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+
 /* Util */
 function dateToTimeString(date){
     let hours = date.getHours();
@@ -62,25 +66,22 @@ function enterKeyupHandler(elemSelector, handler){
 }
 
 /*Tooltips initialization*/
-$('[data-bs-toggle="tooltip"]').tooltip('disable');
 
-$("#tooltipHiddenBtn").on('click', function() {
+// Disable all tooltips by default
+tooltipList.forEach(t => t.disable());
+
+// jQuery for toggle buttons
+$("#tooltipHiddenBtn").on('click', function () {
     $(this).hide();
-    //deactivate the tooltips
-    $('[data-bs-toggle="tooltip"]').tooltip('enable');
+    tooltipList.forEach(t => t.enable());  // Enable tooltips
     $("#tooltipShownBtn").show();
 });
 
-$("#tooltipShownBtn").hide();
-$("#tooltipShownBtn").on('click', function() {
+$("#tooltipShownBtn").hide().on('click', function () {
     $(this).hide();
-    //activate tooltips
-    $('[data-bs-toggle="tooltip"]').tooltip('disable');
+    tooltipList.forEach(t => t.disable()); // Disable tooltips
     $("#tooltipHiddenBtn").show();
 });
-
-
-
 
 
 
