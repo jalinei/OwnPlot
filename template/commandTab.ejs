@@ -11,22 +11,52 @@
 
 <!--This tab div allows the auto scroll to work fine when showing the tab-->
 <div>
-    <div class="input-group input-group-sm mb-3">
-        <button type="button" id="autoSendBtn" class="btn btn-warning col-4" data-bs-toggle="tooltip" title="Toggle auto-send mode (period in ms)">
-            <i class="fa-solid fa-stopwatch"></i>&nbsp;Auto-send (ms)
-        </button>
-        <input type="number" id="autoSendPeriod" name="autoSendPeriodInput" class="form-control" placeholder="1000 (default)" maxlength=9 aria-describedby="basic-addon1">
+    <!-- === COMMANDS SECTION === -->
+    <a data-target="#commandDiv" class="collapseHead" id="configs" role="button" aria-controls="configDiv">
+        <span class="input-group-text" id="configTitle">
+            <i class="fa-solid fa-computer"></i>&nbsp;<span style="font-weight:bolder">Commands</span>
+        </span>
+    </a>
+
+    <div class="collapse show mb-3" id="commandDiv">
+        <div class="card card-body">
+            <div class="input-group input-group-sm mb-3" id="addCommandDiv">
+                <button type="button" id="addCommandBtn" class="btn btn-primary col-4">Add command</button>
+                <input type="text" class="form-control form-control-sm col-4" id="addCommandName" placeholder="Name" value="" data-bs-toggle="tooltip" title="Enter command name">
+                <input type="text" class="form-control form-control-sm col-4" id="addCommandData" placeholder="Data to send" value="" data-bs-toggle="tooltip" title="Enter command data">
+            </div>
+
+            <div id="commandButtonContainer" class="mb-3"></div>
+
+            <div class="input-group input-group-sm mb-3">
+                <button type="button" class="btn btn-danger col-12 btn-sm" id="deleteButtonButton">Delete Buttons</button>
+            </div>
+        </div>
     </div>
 
-    <div class="input-group input-group-sm mb-3">
-        <button type="button" id="sendBtn" class="btn btn-primary col-4" data-bs-toggle="tooltip" title="Send a command">Send</button>
-        <input type="text" class="form-control" id="sendInput" placeholder="Data to send" value="">
+    <!-- === AUTO-SEND SECTION === -->
+    <a data-target="#autoSendDiv" class="collapseHead mb-2" role="button" aria-controls="autoSendDiv">
+        <span class="input-group-text fw-bold">
+            <i class="fa-solid fa-stopwatch"></i>&nbsp;Auto-Send
+        </span>
+    </a>
+    <div class="collapse show mb-3" id="autoSendDiv">
+        <div class="card card-body">
+            <div class="input-group input-group-sm mb-3">
+                <button type="button" id="autoSendBtn" class="btn btn-warning col-4" data-bs-toggle="tooltip" title="Toggle auto-send mode (period in ms)">
+                    <i class="fa-solid fa-stopwatch"></i>&nbsp;Auto-send (ms)
+                </button>
+                <input type="number" id="autoSendPeriod" name="autoSendPeriodInput" class="form-control" placeholder="1000 (default)" maxlength="9" aria-describedby="basic-addon1">
+            </div>
+
+            <div class="input-group input-group-sm mb-0">
+                <button type="button" id="sendBtn" class="btn btn-primary col-4" data-bs-toggle="tooltip" title="Send a command">Send</button>
+                <input type="text" class="form-control" id="sendInput" placeholder="Data to send" value="">
+            </div>
+        </div>
     </div>
 
-    <div class="mb-3">
-        <%- include('configManager'); %>
-    </div>
-
+    <!-- === COMMAND HISTORY SECTION === -->
     <div class="mb-3">
         <a data-target="#commandHistoryDiv" class="collapseHead" id="commandHistory" role="button" aria-controls="commandHistoryDiv">
             <span class="input-group-text" id="commandHistoryTitle">
