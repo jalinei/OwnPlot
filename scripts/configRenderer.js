@@ -33,7 +33,7 @@ async function init() {
         saveConfigButton.on('click', () => {
             if (saveConfigName.val().length > 0) {
                 const filename = addJsonOrNot(saveConfigName.val());
-                ipcRenderer.invoke('config-save-buttons', { filename, commandButtons })
+                ipcRenderer.invoke('config-save', { filename, configToSave: getConfigToSave() })
                     .then(handleSaveCallback)
                     .catch((err) => console.log(`Error saving config: ${err}`));
             }
@@ -42,7 +42,7 @@ async function init() {
         saveConfigButtonButton.on('click', () => {
             const selected = $("#buttonConfigSelect option:selected").val();
             const filename = selected === "new" ? addJsonOrNot(saveConfigName.val()) : selected;
-            ipcRenderer.invoke('config-save-buttons', { filename, commandButtons })
+            ipcRenderer.invoke('config-save', { filename, configToSave: getConfigToSave() })
                 .then(handleSaveCallback)
                 .catch((err) => console.log(`Error saving config: ${err}`));
         });
@@ -55,6 +55,34 @@ async function init() {
     } catch (err) {
         console.error("Failed to get user data folder:", err);
     }
+}
+
+function getConfigToSave() {
+    return {
+        buttons: commandButtons || [],
+        serial: configSerialPlot || {},
+        plotStyle: {
+            refreshTime: refreshValue,
+            legendVisible: myChart.options.plugins.legend.display,
+            legendPosition: myChart.options.plugins.legend.position,
+            y2Enabled: myChart.options.scales.y2.display,
+            yAxisMin: myChart.options.scales.y.min,
+            yAxisMax: myChart.options.scales.y.max,
+            y2AxisMin: myChart.options.scales.y2.min,
+            y2AxisMax: myChart.options.scales.y2.max,
+            absTimeMode,
+            datasets: myChart.data.datasets.map(ds => ({
+                label: ds.label,
+                backgroundColor: ds.backgroundColor,
+                lineStyleName: ds.lineStyleName,
+                pointStyleName: ds.pointStyleName,
+                pointRadius: ds.pointRadius,
+                lineBorderWidth: ds.lineBorderWidth,
+                yAxisID: ds.yAxisID,
+                visible: !ds.hidden
+            }))
+        }
+    };
 }
 
 function addJsonOrNot(filename) {

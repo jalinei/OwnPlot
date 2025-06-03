@@ -36,7 +36,7 @@ function saveConfig(fileName, configObject) {
 }
 
 function saveCommandButtons(filename, commandButtons, callback) {
-    const data = JSON.stringify({ buttons: commandButtons }, null, 2);  // 👈 fix here
+    const data = JSON.stringify({ buttons: commandButtons }, null, 2);
     fs.writeFile(path.join(configButtonPath, filename), data, 'utf8', err => {
         callback?.(err);
     });
@@ -49,6 +49,33 @@ function deleteConfig(configName, callback) {
 
 function listConfigFiles(callback) {
     fs.readdir(configButtonPath, callback);
+}
+
+function applySerialSettings(serialConfig) {
+    Object.assign(configSerialPlot, serialConfig);
+    // manually trigger UI updates (e.g., baudRate field, format select, etc.)
+    // OR: trigger a shared UI refresh function you already use on startup
+  }
+
+function applyPlotStyle(plotStyle) {
+    if (!plotStyle || !plotStyle.datasets) return;
+    myChart.data.datasets.forEach((ds, i) => {
+      const saved = plotStyle.datasets[i];
+      if (!saved) return;
+      ds.label = saved.label;
+      ds.backgroundColor = saved.backgroundColor;
+      ds.borderColor = saved.backgroundColor; // consistent line color
+      ds.lineStyleName = saved.lineStyleName;
+      ds.lineBorderDash = lineStylesEnum[saved.lineStyleName];
+      ds.pointStyleName = saved.pointStyleName;
+      ds.pointStyle = pointStylesEnum[saved.pointStyleName];
+      ds.pointRadius = saved.pointRadius;
+      ds.lineBorderWidth = saved.lineBorderWidth;
+      ds.yAxisID = saved.yAxisID;
+      ds.hidden = configDS.visible === false;
+    });
+    updateLegendTable();
+    myChart.update();
 }
 
 module.exports = {

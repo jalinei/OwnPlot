@@ -4,11 +4,11 @@
  * @ Website: https://www.owntech.org/
  * @ Mail: owntech@laas.fr
  * @ Create Time: 2022-08-30 09:31:24
- * @ Modified by: Guillaume Arthaud
+ * @ Modified by: Jean Alinei
  * @ Modified time: 2022-09-08 12:20:33
  * @ Description:
  */
- 
+
 // const { DatasetController } = require("chart.js");
 const { data } = require("jquery");
 const { proto } = require("once");
@@ -97,12 +97,48 @@ $(() => {
 				myChart.data.datasets[dataset.index].stepped = 'before';
 			})
 		});
-		
+
 
 		nbChannelsInput.attr("value", numberOfDatasets); //initialize input field to the number of datasets
 		nbChannelsInput.attr("max", NB_MAX_DATASETS);
 		nbChannelsInput.on('change', updateNbChannels);
 		//enterKeyupHandler(nbChannelsInput, updateNbChannels);
+	}
+});
+
+$(document).on("configSelected", async function (event, selectedConfigName) {
+	try {
+		const { ipcRenderer } = require("electron");
+		const config = await ipcRenderer.invoke("config-load", selectedConfigName);
+
+		if (config.plotStyle && config.plotStyle.datasets) {
+			nbChannels = config.plotStyle.datasets.length;
+			nbChannelsInput.val(nbChannels);
+			updateNbChannels();
+
+			// Apply style to each dataset
+			config.plotStyle.datasets.forEach((cfg, idx) => {
+				if (myChart.data.datasets[idx]) {
+					const ds = myChart.data.datasets[idx];
+					ds.label = cfg.label;
+					ds.backgroundColor = cfg.backgroundColor;
+					ds.borderColor = cfg.backgroundColor;
+					ds.lineStyleName = cfg.lineStyleName;
+					ds.borderDash = lineStylesEnum[cfg.lineStyleName];
+					ds.pointStyleName = cfg.pointStyleName;
+					ds.pointStyle = pointStylesEnum[cfg.pointStyleName];
+					ds.pointRadius = cfg.pointRadius;
+					ds.borderWidth = cfg.lineBorderWidth;
+					ds.yAxisID = cfg.yAxisID;
+					ds.hidden = cfg.visible === false;
+				}
+			});
+
+			myChart.update();
+			updateLegendTable();
+		}
+	} catch (err) {
+		console.error("Failed to apply plot config:", err);
 	}
 });
 
@@ -127,7 +163,7 @@ nbChannelsInput.on('input', function() {
 		nbChannels = NB_MAX_DATASETS;
 	  	nbChannelsInput.val(nbChannels);
 	}
-}); 
+});
 
 function pausePlot(){
 	myChart.options.scales['x'].realtime.pause = true;
@@ -259,7 +295,7 @@ function legendClickHandler(e, legendItem, legend){
 	}
 }
 
-function initChart(){	
+function initChart(){
 	ctx = $('#myChart')[0].getContext('2d');
 	myChart = new Chart(ctx, {
 		type: 'line',
@@ -307,7 +343,7 @@ function initChart(){
 					type: 'linear',
 					display: false,
 					position: 'right',
-			
+
 					// grid line settings
 					grid: {
 					  drawOnChartArea: false, // only want the grid lines for one axis to show up
@@ -339,7 +375,7 @@ function initChart(){
 					// Assume x axis has the realtime scale
 					pan: {
 						enabled: true,        // Enable panning
-						mode: 'xy',   
+						mode: 'xy',
 					},
 					zoom: {
 						pinch: {
@@ -375,10 +411,10 @@ function initChart(){
 function darkModePlot() {
 	let x = myChart.config.options.scales.x;
 	let y = myChart.config.options.scales.y;
-	
+
 	x.grid.borderColor = 'white';
 	y.grid.borderColor = 'white';
 	x.grid.color = 'rgba(255, 255, 255, 0.5)';
-	y.grid.color = 'rgba(255, 255, 255, 0.5)';	
+	y.grid.color = 'rgba(255, 255, 255, 0.5)';
 }
 

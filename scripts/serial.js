@@ -4,7 +4,7 @@
  * @ Website: https://www.owntech.org/
  * @ Mail: owntech@laas.fr
  * @ Create Time: 2022-08-30 09:31:24
- * @ Modified by: Guillaume Arthaud
+ * @ Modified by: Jean Alinei
  * @ Modified time: 2022-09-07 14:01:57
  * @ Description:
  */
@@ -143,7 +143,7 @@ $(()=>{
 		configSerialPlot.dataFormat = dataFormatField.children("option:selected").val();
 		switchDataForms();
 	});
-	
+
 	separatorField.val(configSerialPlot.separator);
 	separatorField.on('input', function(){
 		if (separatorField.val().length > 0) {
@@ -216,8 +216,37 @@ $(()=>{
 
 });
 
+$(document).on("configSelected", async function (event, selectedConfigName) {
+    try {
+		const config = await ipcRenderer.invoke('config-load', selectedConfigName);
+
+        if (config.serial) {
+            // Apply serial settings to configSerialPlot
+            Object.assign(configSerialPlot, config.serial);
+
+            // Update UI fields based on the loaded config
+            dataFormatField.val(configSerialPlot.dataFormat).trigger("change");
+            separatorField.val(configSerialPlot.separator);
+            baudRateSelect.val(configSerialPlot.baudRate);
+
+            if (!baudRateSelect.find(`option[value="${configSerialPlot.baudRate}"]`).length) {
+                baudRateSelect.val("Custom");
+                customBaudRateField.val(configSerialPlot.baudRate);
+            }
+
+            nbTypeField.val(configSerialPlot.nbType);
+            endiannessField.val(configSerialPlot.endianness);
+
+            updateCustomBaudRateVisibility();
+            switchDataForms();
+        }
+    } catch (err) {
+        console.error("Failed to apply serial config:", err);
+    }
+});
+
 //Check if ports changed from the last time
-//If it's the first time this function is executed, 
+//If it's the first time this function is executed,
 //then it will count as a port changed
 
 async function checkPortsChanged() {
@@ -335,7 +364,7 @@ function openPortRoutine() {
 			if (port.path === mockpath4) {
 				mockFileReader();
 			}
-  
+
 		});
 
 		port.on('close', () => {
@@ -456,9 +485,9 @@ function readBuf(buf, offset){
 			case "uint16":
 				return buf.readUInt16LE(offset);
 			case "uint32":
-				return buf.readUInt32LE(offset);		
+				return buf.readUInt32LE(offset);
 			case "int8":
-				return buf.readInt8LE(offset);		
+				return buf.readInt8LE(offset);
 			case "int16":
 				return buf.readInt16LE(offset);
 			case "int32":
@@ -477,9 +506,9 @@ function readBuf(buf, offset){
 			case "uint16":
 				return buf.readUInt16BE(offset);
 			case "uint32":
-				return buf.readUInt32BE(offset);		
+				return buf.readUInt32BE(offset);
 			case "int8":
-				return buf.readInt8BE(offset);		
+				return buf.readInt8BE(offset);
 			case "int16":
 				return buf.readInt16BE(offset);
 			case "int32":
@@ -508,17 +537,17 @@ function mockSinusGenerator() {
 		sinusInterval = setInterval(() => {
 			let signalValues = ""; // Initialize the string to store signal values
 			const elapsedTime = Date.now() - startTime;
-	
+
 			for (let i = 0; i < numSignals; i++) {
 				const phaseShift = (i * (2 * Math.PI)) / numSignals;
 				const value = amplitude*Math.sin( 2*Math.PI*frequency*(elapsedTime/1000) + phaseShift); // Calculate sinus signal value
 				signalValues += value.toFixed(3); // Append the value to the string
-	
+
 				if (i !== numSignals - 1) {
 					  signalValues += separatorField.val();
 				}
 			}
-	
+
 			const sinusBuffer = Buffer(`${signalValues}\r\n`); // Create the buffer with signal values
 			port.port.emitData(sinusBuffer); // Emit the buffer
 		}, intervalValue);
@@ -537,19 +566,19 @@ function mockTriangleGenerator() {
 		triangleInterval = setInterval(() => {
 			let signalValues = ""; // Initialize the string to store signal values
 			const elapsedTime = Date.now() - startTime;
-	
+
 			for (let i = 0; i < numSignals; i++) {
 				const period = 1 / frequency;
 				const time = (elapsedTime / 1000) % period;
 				const phaseShift = i / numSignals;
 				const value = amplitude*2*Math.abs((2*time / period + phaseShift) - Math.floor((2*time / period + phaseShift) + 1 / 2)); // Calculate triangle signal value
 				signalValues += value.toFixed(3); // Append the value to the string
-	
+
 				if (i !== numSignals - 1) {
-					  signalValues += separatorField.val(); 
+					  signalValues += separatorField.val();
 				}
 			}
-	
+
 			const triangleBuffer = Buffer(`${signalValues}\r\n`); // Create the buffer with signal values
 			port.port.emitData(triangleBuffer); // Emit the buffer
 		}, intervalValue);
@@ -568,17 +597,17 @@ function mockSquareGenerator() {
 		squareInterval = setInterval(() => {
 			let signalValues = ""; // Initialize the string to store signal values
 			const elapsedTime = Date.now() - startTime;
-	
+
 			for (let i = 0; i < numSignals; i++) {
 				const phaseShift = (i * (2 * Math.PI)) / numSignals;
 				const value = amplitude * Math.sign(Math.sin(2 * Math.PI * frequency * (elapsedTime / 1000) + phaseShift)); // Calculate sinus signal value
 				signalValues += value.toFixed(3); // Append the value to the string
-	
+
 				if (i !== numSignals - 1) {
-					  signalValues += separatorField.val(); 
+					  signalValues += separatorField.val();
 				}
 			}
-	
+
 			const squareBuffer = Buffer(`${signalValues}\r\n`); // Create the buffer with signal values
 			port.port.emitData(squareBuffer); // Emit the buffer
 		}, intervalValue);
@@ -675,7 +704,7 @@ function enableButtons() {
 	loopBtn.prop('disabled', false);
 	fileSelectionBtn.prop('disabled', false);
 }
-  
+
 function disableButtons() {
 	loopBtn.prop('disabled', true);
 	fileSelectionBtn.prop('disabled', true);

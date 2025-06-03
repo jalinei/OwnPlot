@@ -112,12 +112,14 @@ app.whenReady().then(() => {
         return configManager.loadConfig(fileName); // this already returns parsed JSON
     });
 
-    ipcMain.handle('config-save-buttons', async (event, { filename, commandButtons }) => {
+    ipcMain.handle('config-save', async (event, { filename, configToSave }) => {
         return new Promise((resolve, reject) => {
-            configManager.saveCommandButtons(filename, commandButtons, (err) => {
-                if (err) reject(err);
-                else resolve();
-            });
+            try {
+                configManager.saveConfig(filename, configToSave);
+                resolve();
+            } catch (err) {
+                reject(err);
+            }
         });
     });
 
