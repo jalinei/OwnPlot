@@ -45,8 +45,16 @@ $(document).ready(function () {
 
   // Handle Flash Firmware button click
   $('#startFlashButton').on('click', () => {
+    // Check if the log selector is off, if so hide the log
+    const isLogUnselected = !$('#toggleFlashLog').prop('checked');
+    if (isLogUnselected) {
+      $('#flashLogWrapper').addClass('d-none');
+    }
+
     const port = $('#AvailablePorts').val();
     if (!selectedFilePath || !port) {
+      // Ensure the log is visible
+      $('#flashLogWrapper').removeClass('d-none');
       $('#flashLogOutput')
         .val('Please select both firmware file and port.\n')
         .addClass('text-danger');
@@ -128,6 +136,11 @@ $(document).ready(function () {
     // Append message to log
     $log.val($log.val() + message + '\n');
     $log.scrollTop($log[0].scrollHeight);
+
+    // Check if the message contains 'error' to show the log
+    if (message.toLowerCase().includes('error')) {
+      $('#flashLogWrapper').removeClass('d-none');
+    }
 
     // Extract percentage and speed
     const percentMatch = message.match(/(\d{1,3}(?:\.\d{1,2})?)%\s/);
