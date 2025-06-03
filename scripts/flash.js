@@ -4,42 +4,33 @@ $(document).ready(function () {
   let selectedFilePath = null;
   let flashing = false;
 
-  ipcRenderer.invoke('get-example-bins').then((bins) => {
-    const $select = $('#exampleSelect');
-    bins.forEach(({ name, fullPath }) => {
-      // <option value="fullPath">name</option>
-      $select.append(`<option value="${fullPath}">${name}</option>`);
-    });
-  });
-
-  // When the user picks an example, set selectedFilePath to its path
   $('#exampleSelect').on('change', function () {
     const chosenPath = $(this).val();
+    if (!chosenPath) return;
 
-    if (chosenPath) {
-      // Extract filename from full path and strip ".bin"
-      const fileName = chosenPath.split(/[\\/]/).pop(); // Get "example.bin"
-      const docName = fileName.replace(/\.bin$/i, '');  // Get "example"
+    selectedFilePath = chosenPath;
 
-      // Build documentation URL
-      const docUrl = `https://docs.owntech.org/latest/examples/TWIST/DC_DC/${docName}`;
+    // Construct doc URL from relative path
+    const relativeDocPath = chosenPath
+      .split(/tools[\\/]+examples_bin[\\/]+/).pop()
+      .replace(/\\/g, '/')
+      .replace(/\.bin$/i, '');
 
-      // Set and show documentation button
-      $('#exampleDocButton')
-        .removeClass('d-none')
-        .off('click')
-        .on('click', () => {
-          window.open(docUrl, '_blank');
-        });
+    const docUrl = `https://docs.owntech.org/latest/examples/${relativeDocPath}`;
 
-      selectedFilePath = chosenPath;
-      $('#flashLogOutput').val(`Loaded example: ${fileName}\n`);
+    const fileName = chosenPath.split(/[\\/]/).pop();
+    $('#exampleDocButton')
+      .removeClass('d-none')
+      .off('click')
+      .on('click', () => window.open(docUrl, '_blank'));
 
-      // Clear file input to indicate selection came from example
-      $('#firmwareFileInput').val('');
-    }
+    $('#flashLogOutput').val(`Loaded example: ${fileName}\n`);
+    $('#firmwareFileInput').val('');
+
+    //check is .json available with the example
+    //if available load that config
+    ipcRenderer.send('try-load-example-config', chosenPath);
   });
-
 
   // Handle file‐input selection (overrides example choice)
   $('#firmwareFileInput').on('change', (e) => {
@@ -80,6 +71,35 @@ $(document).ready(function () {
       comPort: port,
       firmwarePath: selectedFilePath
     });
+  });
+
+  ipcRenderer.invoke('get-example-bins').then((tree) => {
+    const $select = $('#exampleSelect');
+    $select.empty().append('<option selected disabled>-- Choose an example --</option>');
+
+    function addOptions(nodes, depth = 0) {
+      nodes.forEach((node) => {
+        const indent = '\u00A0'.repeat(depth * 4); // non-breaking space (4 per depth level)
+
+        if (node.type === 'folder') {
+          const $folderOption = $('<option disabled>')
+            .text(`${indent}${node.name}`)
+            .css('font-weight', depth === 0 ? 'bold' : 'normal')
+            .css('color', '#888');
+          $select.append($folderOption);
+          addOptions(node.children, depth + 1);
+        }
+
+        if (node.type === 'file') {
+          const $fileOption = $('<option>')
+            .val(node.fullPath)
+            .text(`${indent}${node.name}`);
+          $select.append($fileOption);
+        }
+      });
+    }
+
+    addOptions(tree);
   });
 
   // endFlashingUI: restores buttons once flash completes
@@ -131,5 +151,12 @@ $(document).ready(function () {
   // Listen for the “flash-complete” event—only then reset UI
   ipcRenderer.on('flash-complete', () => {
     endFlashingUI();
+  });
+
+  ipcRenderer.on('load-config', async (_event, configPath) => {
+    // Set the selected value on the <select> element
+    $("#buttonConfigSelect").val(configPath);
+    // Trigger config loading event
+    $(document).trigger("configSelected", [configPath]);
   });
 });

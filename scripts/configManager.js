@@ -23,9 +23,14 @@ function getConfigFilePath(fileName) {
     return path.join(configButtonPath, fileName);
 }
 
-function loadConfig(fileName) {
-    const filePath = getConfigFilePath(fileName);
+function loadConfig(fileOrPath) {
+    // If it's an absolute path, use it directly
+    const filePath = path.isAbsolute(fileOrPath)
+        ? fileOrPath
+        : getConfigFilePath(fileOrPath);
+
     if (!fs.existsSync(filePath)) return {};
+
     const rawData = fs.readFileSync(filePath, 'utf-8');
     return JSON.parse(rawData);
 }

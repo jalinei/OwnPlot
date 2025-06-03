@@ -38,8 +38,8 @@ switch (process.platform) {
 }
 
 mcumgrPath = isDev
-  ? path.join(__dirname, 'tools', mcumgrBinary)
-  : path.join(process.resourcesPath, 'tools', mcumgrBinary);
+    ? path.join(__dirname, 'tools', mcumgrBinary)
+    : path.join(process.resourcesPath, 'tools', mcumgrBinary);
 
 let mainWindow;
 
@@ -94,6 +94,13 @@ app.whenReady().then(() => {
     mkdirp(app.getPath('userData') + "/config/buttons");
     copyFolder(__dirname + "/config/buttons", app.getPath('userData') + "/config/buttons");
 
+    ipcMain.on('try-load-example-config', (event, binPath) => {
+        const configPath = binPath.replace(/\.bin$/i, '.json');
+        if (fs.existsSync(configPath)) {
+            event.sender.send('load-config', configPath);
+        }
+    });
+
     // CONFIG MANAGER IPCs
     ipcMain.handle('get-user-data-folder', async () => {
         return app.getPath('userData');
@@ -133,43 +140,60 @@ app.whenReady().then(() => {
     });
 
     // FLASHER IPCs
+    function walkTree(dir, base = '') {
+        const entries = fs.readdirSync(dir);
+        const result = [];
+
+        for (const entry of entries) {
+            const absPath = path.join(dir, entry);
+            const relPath = path.join(base, entry);
+            const stat = fs.statSync(absPath);
+
+            if (stat.isDirectory()) {
+                result.push({
+                    type: 'folder',
+                    name: entry,
+                    children: walkTree(absPath, relPath),
+                });
+            } else if (entry.toLowerCase().endsWith('.bin')) {
+                result.push({
+                    type: 'file',
+                    name: entry,
+                    fullPath: absPath,
+                    relativePath: relPath,
+                });
+            }
+        }
+
+        return result;
+    }
+
     ipcMain.handle('get-example-bins', async () => {
         try {
-            // Folder containing example .bin files:
-            const examplesDir = path.join(__dirname, 'tools', 'examples_bin');
-            const files = await fs.promises.readdir(examplesDir);
-
-          // Filter only .bin files:
-            const bins = files
-            .filter((fn) => fn.toLowerCase().endsWith('.bin'))
-            .map((fn) => ({
-                name: fn,
-                fullPath: path.join(examplesDir, fn)
-            }));
-
-            return bins;
+            const root = path.join(__dirname, 'tools', 'examples_bin');
+            return walkTree(root);
         } catch (err) {
-            console.error('Error reading examples_bin folder:', err);
+            console.error('Error reading examples_bin:', err);
             return [];
         }
     });
 
     ipcMain.handle("start-flash", (event, { comPort, firmwarePath }) => {
         return new Promise((resolve) => {
-          flashFirmware(
+            flashFirmware(
             { comPort, firmwarePath, mcumgrPath },
             (progressMessage) => {
-              // Relay progress messages
-              mainWindow.webContents.send("flash-progress", progressMessage);
+                // Relay progress messages
+                mainWindow.webContents.send("flash-progress", progressMessage);
             },
             () => {
                 // Notify renderer that flashing is fully done (error or success)
                 mainWindow.webContents.send("flash-complete");
             }
-          );
-          resolve(); // We resolve immediately; done events are separate
+            );
+            resolve(); // We resolve immediately; done events are separate
         });
-      });
+        });
 
     ipcMain.on('cancel-flash', () => {
         cancelFlash();
