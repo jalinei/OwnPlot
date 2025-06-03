@@ -128,7 +128,6 @@ function addCommandButton(newButton) {
 async function loadButtonsFromConfig(configFileName) {
     try {
         const config = await ipcRenderer.invoke('config-load', configFileName);
-        console.log("Loaded config:", config);
         commandButtons = config.buttons || [];
 
         lastLoadedButtons = JSON.parse(JSON.stringify(commandButtons)); // deep clone
