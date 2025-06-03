@@ -63,7 +63,7 @@ function enterKeyupHandler(elemSelector, handler){
 
 /*Tooltips initialization*/
 $('[data-bs-toggle="tooltip"]').tooltip('disable');
- 
+
 $("#tooltipHiddenBtn").on('click', function() {
     $(this).hide();
     //deactivate the tooltips
@@ -85,7 +85,7 @@ $("#tooltipShownBtn").on('click', function() {
 
 
 /* Debug */
-// not available in this version: 
+// not available in this version:
 // const debugTermSel = $("#debugTerminal");
 // function printDebugTerminal(err){
 // 	debugTermSel.prepend('<span>' + dateToPreciseTimeString(new Date()) + err + '</span>');
@@ -120,8 +120,8 @@ function updateLegendTable(){
         tableLine = tableLine.replace("<option>" + dataset.lineStyleName, "<option selected>" + dataset.lineStyleName);
         tableLine = tableLine.replace('#ffffff', dataset.backgroundColor);
         tableLine = tableLine.replace('id="pointSizeInputNULL" value=""', 'id="pointSizeInputNULL" value="' + dataset.pointRadius + '"');
-        tableLine = tableLine.replace('id="lineSizeInputNULL" value=""', 'id="lineSizeInputNULL" value="' + dataset.lineBorderWidth + '"');        
-        tableLine = tableLine.replace('id="labelInputNULL" value="Dataset NULL"', 'id="labelInputNULL" value="' + dataset.label + '"');               
+        tableLine = tableLine.replace('id="lineSizeInputNULL" value=""', 'id="lineSizeInputNULL" value="' + dataset.lineBorderWidth + '"');
+        tableLine = tableLine.replace('id="labelInputNULL" value="Dataset NULL"', 'id="labelInputNULL" value="' + dataset.label + '"');
         tableLine = tableLine.replace(/NULL/gm, dataset.index + 1);
         legendSetupTable.append(tableLine);
     });
@@ -180,9 +180,15 @@ function updateLegendTable(){
         myChart.data.datasets[datasetIndex].lineBorderWidth = parseInt($(this).val());
     });
     enterKeyupHandler($(".lineSizeInput"), ()=>{}); //blur on enter even if the field has not changed
-    
-    $(".collapseHead").on('click', function(){
-        $($(this).attr('data-target')).collapse("toggle"); // Collapse doesn't work only with data-bs-toggle, i can't figure why
+
+    $(".collapseHead").on("click", function () {
+        const targetSelector = $(this).attr("data-target");
+        const target = document.querySelector(targetSelector);
+
+        if (target) {
+            const bsCollapse = bootstrap.Collapse.getOrCreateInstance(target, { toggle: false });
+            bsCollapse.toggle();
+        }
     });
 }
 

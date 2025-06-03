@@ -4,7 +4,7 @@
  * @ Website: https://www.owntech.org/
  * @ Mail: owntech@laas.fr
  * @ Create Time: 2022-08-30 09:31:24
- * @ Modified by: Matthias Riffard
+ * @ Modified by: Jean Alinei
  * @ Modified time: 2022-09-07 13:44:23
  * @ Description:
  */
@@ -31,11 +31,7 @@ $(()=>{
 			updateHeight($("#sideBar"));
 		}, 200); //Set definitive height after a longer delay, so that the eventual animation is done
 	});
-    
-    $(".collapseHead").on('click', function(){
-		const head = this;
-        $($(this).attr('data-target')).collapse("toggle"); // Collapse doesn't work only with data-bs-toggle, i can't figure why
-    });
+
 });
 
 function updateHeight(elemSelector){
