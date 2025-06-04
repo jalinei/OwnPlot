@@ -5,6 +5,7 @@
     "@electron-forge/maker-rpm": "^6.0.0-beta.64",
     "@electron-forge/maker-squirrel": "^6.0.0-beta.64",
     "@electron-forge/maker-zip": "^6.0.0-beta.64",
+    "sass": "^1.63.3",
     "electron": "^25.3.1",
     "electron-builder": "^24.6.3",
     "electron-forge": "^5.2.4"
@@ -100,7 +101,6 @@
     "responselike": "^3.0.0",
     "roarr": "^7.15.0",
     "safe-buffer": "^5.1.2",
-    "sass": "^1.63.3",
     "semver": "^7.5.4",
     "semver-compare": "^1.0.0",
     "serialize-error": "^11.0.0",
@@ -131,21 +131,21 @@
     "postinstall": "chmod +x tools/mcumgr",
     "pack-clean": "rm -rf dist",
     "pack-linux": "electron-builder --linux AppImage deb rpm",
-    "pack-win": "DEBUG=electron-builder electron-builder --win --x64",
+    "pack-win": "rm -rf node_modules/@serialport/bindings-cpp/build node_modules/@serialport/bindings-cpp/bin/linux-x64-116 && electron-builder --win --x64",
     "pack-mac-uni": "electron-builder --mac --universal",
     "pack-linux-all": "electron-builder --linux --x64 --armv7l --arm64",
-    "pack-win-all": "electron-builder --win --ia32 --x64 --arm64",
+    "pack-win-all": "rm -rf node_modules/@serialport/bindings-cpp/build node_modules/@serialport/bindings-cpp/bin/linux-x64-116 && electron-builder --win --ia32 --x64 --arm64",
     "pack-all": "pack-clean; pack-mac-uni; pack-linux-all; pack-win-all"
   },
   "build": {
     "appId": "com.ownplot.app",
     "asar": true,
     "asarUnpack": [
+      "**/*.node",
       "tools/mcumgr",
       "tools/examples_bin/**"
     ],
     "npmRebuild": false,
-    "buildDependenciesFromSource": true,
     "extraResources": [
       {
         "from": "tools/",
