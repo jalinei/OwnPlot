@@ -10,7 +10,7 @@
     "electron-forge": "^5.2.4"
   },
   "name": "OwnPlot",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "OwnTech's Serial Plotter",
   "homepage": "https://github.com/owntech-foundation/OwnPlot",
   "main": "main.js",
@@ -128,9 +128,10 @@
   "scripts": {
     "stylecomp": "sass scss/ownplot.scss:styles/ownplot.css",
     "start": "npm run stylecomp && electron-forge start",
+    "postinstall": "chmod +x tools/mcumgr",
     "pack-clean": "rm -rf dist",
     "pack-linux": "electron-builder --linux AppImage deb rpm",
-    "pack-win": "electron-builder --win --x64",
+    "pack-win": "DEBUG=electron-builder electron-builder --win --x64",
     "pack-mac-uni": "electron-builder --mac --universal",
     "pack-linux-all": "electron-builder --linux --x64 --armv7l --arm64",
     "pack-win-all": "electron-builder --win --ia32 --x64 --arm64",
@@ -139,14 +140,20 @@
   "build": {
     "appId": "com.ownplot.app",
     "asar": true,
-    "npmRebuild": true,
+    "asarUnpack": [
+      "tools/mcumgr",
+      "tools/examples_bin/**"
+    ],
+    "npmRebuild": false,
+    "buildDependenciesFromSource": true,
     "extraResources": [
       {
         "from": "tools/",
         "to": "tools",
         "filter": [
           "mcumgr",
-          "mcumgr.exe"
+          "mcumgr.exe",
+          "examples_bin/**"
         ]
       }
     ],

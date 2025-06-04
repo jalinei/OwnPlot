@@ -19,7 +19,6 @@ const { flashFirmware, cancelFlash } = require('./scripts/flasher');
 
 let icon;
 let mcumgrBinary;
-let mcumgrPath;
 
 switch (process.platform) {
     case 'win32':
@@ -37,9 +36,14 @@ switch (process.platform) {
         break;
 }
 
-mcumgrPath = isDev
+const mcumgrPath = isDev
     ? path.join(__dirname, 'tools', mcumgrBinary)
     : path.join(process.resourcesPath, 'tools', mcumgrBinary);
+
+
+const examplesPath = isDev
+    ? path.join(__dirname, 'tools', 'examples_bin')
+    : path.join(process.resourcesPath, 'tools', 'examples_bin');
 
 let mainWindow;
 
@@ -170,7 +174,7 @@ app.whenReady().then(() => {
 
     ipcMain.handle('get-example-bins', async () => {
         try {
-            const root = path.join(__dirname, 'tools', 'examples_bin');
+            const root = examplesPath;
             return walkTree(root);
         } catch (err) {
             console.error('Error reading examples_bin:', err);
